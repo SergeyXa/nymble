@@ -1,0 +1,13 @@
+.icon-button {
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  line-height: 1;
+}
+
+.icon-button i {
+  font-size: 1.05rem;
+}

@@ -1,0 +1,41 @@
+.dictionary-block {
+  background: #fff;
+}
+
+.dictionary-block-header {
+  position: sticky;
+  top: 88px;
+  z-index: 5;
+  background: #fff;
+  padding: 12px 0 28px;
+  margin-top: -12px;
+  margin-bottom: 0 !important;
+}
+
+.dictionary-block-header::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: 16px;
+  left: 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.dictionaries-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: #f7f8fb;
+  padding-top: 12px;
+  padding-bottom: 12px;
+  margin-top: -12px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.dictionary-entry {
+  box-shadow: none !important;
+}
+
+.dictionary-entry textarea {
+  min-height: 120px;
+}

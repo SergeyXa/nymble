@@ -1,0 +1,9 @@
+@import "bootstrap/dist/css/bootstrap.min.css";
+@import "bootstrap-icons/font/bootstrap-icons.css";
+@import "./base.css";
+@import "./shared.css";
+@import "./composer/Page.css";
+@import "./composer/ComposerPane.css";
+@import "./composer/DictionaryTabs.css";
+@import "./composer/AnnotatedEditor.css";
+@import "./dictionaries/Page.css";

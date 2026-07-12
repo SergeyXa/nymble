@@ -9,7 +9,7 @@ export type AppConfig = {
 export function loadConfig(): AppConfig {
   const host = process.env.HOST || "127.0.0.1";
   const port = Number.parseInt(process.env.PORT || "3100", 10);
-  const dictionaryPath = path.resolve(process.env.DICTIONARY_PATH || "./data/dictionary.json");
+  const dictionaryPath = path.resolve(process.env.DICTIONARY_PATH || "./data/dictionaries.json");
 
   return {
     host,

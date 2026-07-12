@@ -18,18 +18,18 @@ cd "$SOURCE_DIR"
 npm run build
 
 echo "Creating runtime directory: $TARGET_DIR"
-as_root mkdir -p "$TARGET_DIR/data" "$TARGET_DIR/dist" "$TARGET_DIR/src/public"
+as_root mkdir -p "$TARGET_DIR/data" "$TARGET_DIR/dist"
 
-if [[ ! -f "$TARGET_DIR/data/dictionary.json" && -f "$SOURCE_DIR/data/dictionary.json" ]]; then
+if [[ ! -f "$TARGET_DIR/data/dictionaries.json" && -f "$SOURCE_DIR/data/dictionaries.json" ]]; then
   echo "Seeding initial dictionary data"
-  as_root cp "$SOURCE_DIR/data/dictionary.json" "$TARGET_DIR/data/dictionary.json"
+  as_root cp "$SOURCE_DIR/data/dictionaries.json" "$TARGET_DIR/data/dictionaries.json"
 fi
 
 echo "Copying runtime files"
 as_root rsync -a --delete "$SOURCE_DIR/dist/" "$TARGET_DIR/dist/"
-as_root rsync -a --delete "$SOURCE_DIR/src/public/" "$TARGET_DIR/src/public/"
+as_root rsync -a --delete "$SOURCE_DIR/dist/static/" "$TARGET_DIR/dist/static/"
 as_root rsync -a "$SOURCE_DIR/package.json" "$SOURCE_DIR/package-lock.json" "$TARGET_DIR/"
-as_root rsync -a "$SOURCE_DIR/scripts/install-systemd-service.sh" "$TARGET_DIR/"
+as_root rsync -a "$SOURCE_DIR/ops/install-systemd-service.sh" "$TARGET_DIR/"
 
 echo "Installing production dependencies"
 as_root npm install --omit=dev --prefix "$TARGET_DIR"

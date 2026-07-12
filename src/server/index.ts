@@ -2,19 +2,23 @@ import path from "node:path";
 import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import Fastify from "fastify";
+import fastifyCompress from "@fastify/compress";
 import fastifyStatic from "@fastify/static";
 import { loadConfig } from "./config.js";
 import { JsonDictionaryStore, DictionaryValidationError } from "./dictionaryStore.js";
-import { composerPage, dictionaryPage } from "./pages.js";
+import { composerPage, dictionariesPage } from "./pages.js";
 import { depersonalize, personalize } from "./transform.js";
 import type { SaveDictionary, TransformDirection } from "./types.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const sourceRoot = path.resolve(__dirname, "..");
 const projectRoot = path.resolve(sourceRoot, "..");
-const publicRoot = existsSync(path.join(projectRoot, "src", "public"))
-  ? path.join(projectRoot, "src", "public")
-  : path.join(sourceRoot, "public");
+const staticRoot = existsSync(path.join(projectRoot, "dist", "static"))
+  ? path.join(projectRoot, "dist", "static")
+  : path.join(projectRoot, "src", "static");
+const mediaRoot = existsSync(path.join(projectRoot, "dist", "media"))
+  ? path.join(projectRoot, "dist", "media")
+  : path.join(projectRoot, "media");
 
 const config = loadConfig();
 const dictionaryStore = new JsonDictionaryStore(config.dictionaryPath);
@@ -35,20 +39,18 @@ const app = Fastify({
   }
 });
 
+await app.register(fastifyCompress, {
+  encodings: ["br", "gzip", "deflate"]
+});
+
 await app.register(fastifyStatic, {
-  root: publicRoot,
+  root: staticRoot,
   prefix: "/static/"
 });
 
 await app.register(fastifyStatic, {
-  root: path.join(projectRoot, "node_modules", "bootstrap", "dist"),
-  prefix: "/vendor/bootstrap/",
-  decorateReply: false
-});
-
-await app.register(fastifyStatic, {
-  root: path.join(projectRoot, "node_modules", "bootstrap-icons", "font"),
-  prefix: "/vendor/bootstrap-icons/",
+  root: mediaRoot,
+  prefix: "/media/",
   decorateReply: false
 });
 
@@ -56,15 +58,15 @@ app.get("/", async (_request, reply) => {
   return reply.type("text/html").send(composerPage());
 });
 
-app.get("/dictionary", async (_request, reply) => {
-  return reply.type("text/html").send(dictionaryPage());
+app.get("/dictionaries", async (_request, reply) => {
+  return reply.type("text/html").send(dictionariesPage());
 });
 
 app.get("/api/health", async () => ({ ok: true }));
 
-app.get("/api/dictionary", async () => dictionaryStore.getDictionary());
+app.get("/api/dictionaries", async () => dictionaryStore.getDictionary());
 
-app.put<{ Body: { dictionaries?: SaveDictionary[] } }>("/api/dictionary", async (request, reply) => {
+app.put<{ Body: { dictionaries?: SaveDictionary[] } }>("/api/dictionaries", async (request, reply) => {
   try {
     return await dictionaryStore.saveDictionary(request.body.dictionaries || []);
   } catch (error) {

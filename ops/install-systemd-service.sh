@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Installs the application's systemd unit.
 set -Eeuo pipefail
 
 APP_NAME="nymble"
@@ -9,7 +10,7 @@ RUN_USER="${NYMBLE_RUN_USER:-www-data}"
 RUN_GROUP="${NYMBLE_RUN_GROUP:-www-data}"
 HOST="${HOST:-127.0.0.1}"
 PORT="${PORT:-3100}"
-DICTIONARY_PATH="${DICTIONARY_PATH:-$APP_DIR/data/dictionary.json}"
+DICTIONARY_PATH="${DICTIONARY_PATH:-$APP_DIR/data/dictionaries.json}"
 SERVICE_FILE="/etc/systemd/system/${SERVICE_NAME}.service"
 
 if [[ "${EUID}" -ne 0 ]]; then

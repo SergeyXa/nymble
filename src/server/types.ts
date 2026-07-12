@@ -40,11 +40,11 @@ export type Replacement = {
   placeholder: string;
   start: number;
   end: number;
+  resultStart: number;
+  resultEnd: number;
 };
 
 export type TransformResponse = {
   resultText: string;
   replacements: Replacement[];
-  warnings: string[];
-  unresolvedPlaceholders: string[];
 };

@@ -28,12 +28,15 @@ export function depersonalize(text: string, entries: DictionaryEntry[]): Transfo
     const match = findCandidateAt(text, cursor, candidates);
     if (match) {
       const sourceText = text.slice(cursor, cursor + match.value.length);
+      const resultStart = resultText.length;
       replacements.push({
         sourceText,
         replacementText: match.placeholder,
         placeholder: match.placeholder,
         start: cursor,
-        end: cursor + match.value.length
+        end: cursor + match.value.length,
+        resultStart,
+        resultEnd: resultStart + match.placeholder.length
       });
       resultText += match.placeholder;
       cursor += match.value.length;
@@ -43,7 +46,7 @@ export function depersonalize(text: string, entries: DictionaryEntry[]): Transfo
     }
   }
 
-  return { resultText, replacements, warnings: [], unresolvedPlaceholders: [] };
+  return { resultText, replacements };
 }
 
 export function personalize(text: string, entries: DictionaryEntry[]): TransformResponse {
@@ -54,33 +57,38 @@ export function personalize(text: string, entries: DictionaryEntry[]): Transform
   );
 
   const replacements: Replacement[] = [];
-  const unresolved = new Set<string>();
+  let resultText = "";
+  let cursor = 0;
 
-  const resultText = text.replace(/\{[^{}\r\n]+\}/g, (placeholder, offset) => {
+  for (const match of text.matchAll(/\{[^{}\r\n]+\}/g)) {
+    const placeholder = match[0];
+    const offset = match.index;
+    resultText += text.slice(cursor, offset);
     const entry = primaryValues.get(placeholder.toLocaleLowerCase());
     if (!entry) {
-      unresolved.add(placeholder);
-      return placeholder;
+      resultText += placeholder;
+      cursor = offset + placeholder.length;
+      continue;
     }
 
     const replacementText = entry.values[0].value;
+    const resultStart = resultText.length;
     replacements.push({
       sourceText: placeholder,
       replacementText,
       placeholder: entry.placeholder,
       start: offset,
-      end: offset + placeholder.length
+      end: offset + placeholder.length,
+      resultStart,
+      resultEnd: resultStart + replacementText.length
     });
-    return replacementText;
-  });
+    resultText += replacementText;
+    cursor = offset + placeholder.length;
+  }
 
-  const unresolvedPlaceholders = [...unresolved];
-  return {
-    resultText,
-    replacements,
-    unresolvedPlaceholders,
-    warnings: unresolvedPlaceholders.map((placeholder) => `Unknown placeholder: ${placeholder}`)
-  };
+  resultText += text.slice(cursor);
+
+  return { resultText, replacements };
 }
 
 function findCandidateAt(text: string, start: number, candidates: Candidate[]): Candidate | undefined {

@@ -1,0 +1,72 @@
+html:has(.composer-page),
+body:has(.composer-page) {
+  height: 100%;
+  overflow: hidden;
+}
+
+.composer-page {
+  height: 100dvh;
+  max-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding-top: 16px !important;
+  padding-bottom: 16px !important;
+}
+
+.composer-shell {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.composer-grid {
+  height: 100%;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 0 minmax(0, 1fr);
+  grid-template-rows: 56px minmax(0, 1fr);
+  grid-template-areas:
+    "source-header swap target-header"
+    "source-editor source-editor target-editor";
+  background: #fff;
+}
+
+.swap-cell {
+  grid-area: swap;
+  width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+  border-bottom: 1px solid var(--bs-border-color);
+}
+
+.swap-cell .icon-button {
+  flex: 0 0 34px;
+}
+
+@media (max-width: 991.98px) {
+  .composer-grid {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: 56px minmax(220px, 1fr) 44px 56px minmax(220px, 1fr);
+    grid-template-areas:
+      "source-header"
+      "source-editor"
+      "swap"
+      "target-header"
+      "target-editor";
+  }
+
+  .composer-page {
+    overflow: auto;
+    padding-top: 16px !important;
+    padding-bottom: 16px !important;
+  }
+
+  .swap-cell {
+    width: auto;
+    border-bottom: 1px solid var(--bs-border-color);
+    padding: 0;
+  }
+}

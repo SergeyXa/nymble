@@ -1,0 +1,41 @@
+node_modules/
+dist/
+
+# Runtime data. Keep only placeholders such as data/.gitkeep.
+data/*.json
+data/*.sqlite
+data/*.sqlite-*
+data/*.db
+data/*.db-*
+data/*.bak
+data/*.backup
+
+.env
+.env.*
+!.env.example
+
+# Logs and diagnostics.
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Test/build caches and generated reports.
+coverage/
+.nyc_output/
+.cache/
+.parcel-cache/
+.vite/
+.tsbuildinfo
+*.tsbuildinfo
+
+# Local editor/OS noise.
+.DS_Store
+Thumbs.db
+
+# Temporary files.
+*.tmp
+*.temp
+*.swp
+*.swo

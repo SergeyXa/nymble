@@ -1,9 +1,24 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { fetchDictionaries, transformText } from "./api";
+import { fetchAppConfig, fetchDictionaries, transformText } from "./api";
 import { resultAnnotations, sourceAnnotations } from "./annotations";
 import type { AnnotatedEditorHandle } from "./AnnotatedEditor";
 import { ComposerPane } from "./ComposerPane";
-import type { Dictionary, Replacement, TransformDirection } from "./types";
+import type {
+  AppConfig,
+  Dictionary,
+  LeakFinding,
+  Replacement,
+  TransformDirection
+} from "./types";
+
+const initialConfig: AppConfig = {
+  leakDetection: {
+    enabled: false,
+    provider: "presidio",
+    defaultLanguage: "en",
+    supportedLanguages: ["en"]
+  }
+};
 
 export function Page() {
   const [dictionaries, setDictionaries] = useState<Dictionary[]>([]);
@@ -12,6 +27,10 @@ export function Page() {
   const [sourceText, setSourceText] = useState("");
   const [resultText, setResultText] = useState("");
   const [replacements, setReplacements] = useState<Replacement[]>([]);
+  const [leakFindings, setLeakFindings] = useState<LeakFinding[]>([]);
+  const [warnings, setWarnings] = useState<string[]>([]);
+  const [appConfig, setAppConfig] = useState<AppConfig>(initialConfig);
+  const [leakDetectionLanguage, setLeakDetectionLanguage] = useState("en");
   const [status, setStatus] = useState("");
   const sourceEditorRef = useRef<AnnotatedEditorHandle>(null);
 
@@ -24,13 +43,15 @@ export function Page() {
     let cancelled = false;
     setStatus("Loading dictionaries...");
 
-    fetchDictionaries()
-      .then((items) => {
+    Promise.all([fetchDictionaries(), fetchAppConfig()])
+      .then(([items, loadedConfig]) => {
         if (cancelled) {
           return;
         }
         setDictionaries(items);
         setSelectedDictionaryId(items[0]?.id || "");
+        setAppConfig(loadedConfig);
+        setLeakDetectionLanguage(loadedConfig.leakDetection.defaultLanguage);
         setStatus(items.length ? "" : "Create a dictionary first.");
       })
       .catch((error: Error) => {
@@ -50,6 +71,7 @@ export function Page() {
       if (!currentDictionary) {
         setResultText("");
         setReplacements([]);
+        resetLeakDetectionResult();
         setStatus("Create a dictionary first.");
         return;
       }
@@ -57,17 +79,21 @@ export function Page() {
       if (!sourceText.trim()) {
         setResultText("");
         setReplacements([]);
+        resetLeakDetectionResult();
         setStatus("");
         return;
       }
 
       setStatus("Working...");
-      transformText(direction, currentDictionary.id, sourceText, controller.signal)
+      setLeakFindings([]);
+      setWarnings([]);
+      transformText(direction, currentDictionary.id, sourceText, leakDetectionLanguage, controller.signal)
         .then((payload) => {
           setResultText(payload.resultText || "");
           setReplacements(payload.replacements || []);
-          const count = payload.replacements?.length || 0;
-          setStatus(`${currentDictionary.name}: ${count === 1 ? "1 replacement" : `${count} replacements`}`);
+          setLeakFindings(payload.leakFindings || []);
+          setWarnings(payload.warnings || []);
+          setStatus("");
         })
         .catch((error: Error) => {
           if (error.name !== "AbortError") {
@@ -80,7 +106,12 @@ export function Page() {
       window.clearTimeout(timer);
       controller.abort();
     };
-  }, [currentDictionary, direction, sourceText]);
+  }, [currentDictionary, direction, sourceText, leakDetectionLanguage]);
+
+  function resetLeakDetectionResult() {
+    setLeakFindings([]);
+    setWarnings([]);
+  }
 
   function selectTab(side: "source" | "target", tabId: string) {
     if (tabId === "original") {
@@ -92,6 +123,7 @@ export function Page() {
 
     setResultText("");
     setReplacements([]);
+    resetLeakDetectionResult();
   }
 
   function swapDirection() {
@@ -99,25 +131,32 @@ export function Page() {
     setSourceText(resultText);
     setResultText("");
     setReplacements([]);
+    resetLeakDetectionResult();
   }
 
   function clearText() {
     setSourceText("");
     setResultText("");
     setReplacements([]);
+    resetLeakDetectionResult();
     setStatus("");
     sourceEditorRef.current?.focus();
   }
 
   async function pasteText() {
     try {
-      setSourceText(await navigator.clipboard.readText());
+      updateSourceText(await navigator.clipboard.readText());
       sourceEditorRef.current?.focus();
       setStatus("Pasted");
     } catch (_error) {
       sourceEditorRef.current?.focus();
       setStatus("Paste failed. Use keyboard paste.");
     }
+  }
+
+  function updateSourceText(value: string) {
+    setSourceText(value);
+    resetLeakDetectionResult();
   }
 
   async function copyText() {
@@ -131,21 +170,12 @@ export function Page() {
 
   return (
     <main className="container composer-page py-4 py-lg-5">
-      <header className="d-flex align-items-center justify-content-between gap-3 mb-4">
+      <header className="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
         <div>
           <h1 className="h3 mb-1">Nymble</h1>
           <p className="text-secondary mb-0">Depersonalize text before sharing it with AI tools.</p>
         </div>
         <div className="d-flex flex-wrap justify-content-end gap-2">
-          <button
-            className="btn btn-primary btn-sm icon-button"
-            type="button"
-            aria-label="Clear"
-            title="Clear"
-            onClick={clearText}
-          >
-            <i className="bi bi-x-lg" aria-hidden="true"></i>
-          </button>
           <a className="btn btn-outline-secondary btn-sm" href="/dictionaries">
             Edit dictionaries
           </a>
@@ -163,18 +193,44 @@ export function Page() {
             direction={direction}
             placeholder="Paste text here"
             editorRef={sourceEditorRef}
-            action={
-              <button
-                className="btn btn-outline-primary btn-sm icon-button"
-                type="button"
-                aria-label="Paste"
-                title="Paste"
-                onClick={pasteText}
+            afterTabs={appConfig.leakDetection.enabled && direction === "depersonalize" ? (
+              <select
+                id="leakDetectionLanguage"
+                className="form-select form-select-sm leak-language-select"
+                value={leakDetectionLanguage}
+                aria-label="Leak detection language"
+                title="Leak detection language"
+                onChange={(event) => setLeakDetectionLanguage(event.target.value)}
               >
-                <i className="bi bi-box-arrow-in-down-right" aria-hidden="true"></i>
-              </button>
+                {appConfig.leakDetection.supportedLanguages.map((language) => (
+                  <option key={language} value={language}>{language}</option>
+                ))}
+                <option value="off">off</option>
+              </select>
+            ) : undefined}
+            action={
+              <>
+                <button
+                  className="btn btn-outline-secondary btn-sm icon-button"
+                  type="button"
+                  aria-label="Clear"
+                  title="Clear"
+                  onClick={clearText}
+                >
+                  <i className="bi bi-trash" aria-hidden="true"></i>
+                </button>
+                <button
+                  className="btn btn-outline-primary btn-sm icon-button"
+                  type="button"
+                  aria-label="Paste"
+                  title="Paste"
+                  onClick={pasteText}
+                >
+                  <i className="bi bi-box-arrow-in-down-right" aria-hidden="true"></i>
+                </button>
+              </>
             }
-            onChange={setSourceText}
+            onChange={updateSourceText}
             onSelectTab={selectTab}
           />
 
@@ -193,7 +249,7 @@ export function Page() {
           <ComposerPane
             side="target"
             value={resultText}
-            annotations={resultAnnotations(replacements, resultText)}
+            annotations={resultAnnotations(replacements, resultText, direction, leakFindings)}
             dictionaries={dictionaries}
             selectedDictionaryId={selectedDictionaryId}
             direction={direction}
@@ -215,11 +271,21 @@ export function Page() {
         </div>
       </section>
 
-      <section className="mt-3 d-flex justify-content-end">
-        <span className="small text-secondary" role="status">
-          {status}
-        </span>
-      </section>
+      {appConfig.leakDetection.enabled && direction === "depersonalize" && warnings.length ? (
+        <section className="leak-warning mt-3" aria-live="polite">
+          {warnings.map((warning) => (
+            <div className="small text-warning-emphasis" key={warning}>{warning}</div>
+          ))}
+        </section>
+      ) : null}
+
+      {status ? (
+        <section className="mt-3 d-flex justify-content-end">
+          <span className="small text-secondary" role="status">
+            {status}
+          </span>
+        </section>
+      ) : null}
     </main>
   );
 }

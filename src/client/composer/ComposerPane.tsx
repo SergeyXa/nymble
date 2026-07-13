@@ -13,6 +13,7 @@ type ComposerPaneProps = {
   readOnly?: boolean;
   placeholder: string;
   editorRef?: React.Ref<AnnotatedEditorHandle>;
+  afterTabs?: React.ReactNode;
   action: React.ReactNode;
   onChange?: (value: string) => void;
   onSelectTab: (side: "source" | "target", tabId: string) => void;
@@ -28,6 +29,7 @@ export function ComposerPane({
   readOnly = false,
   placeholder,
   editorRef,
+  afterTabs,
   action,
   onChange,
   onSelectTab
@@ -35,14 +37,17 @@ export function ComposerPane({
   return (
     <>
       <div className={`pane-header pane-header-${side === "source" ? "left" : "right"}`}>
-        <DictionaryTabs
-          side={side}
-          dictionaries={dictionaries}
-          selectedDictionaryId={selectedDictionaryId}
-          direction={direction}
-          onSelect={onSelectTab}
-        />
-        {action}
+        <div className="pane-tab-controls">
+          <DictionaryTabs
+            side={side}
+            dictionaries={dictionaries}
+            selectedDictionaryId={selectedDictionaryId}
+            direction={direction}
+            onSelect={onSelectTab}
+          />
+          {afterTabs}
+        </div>
+        <div className="pane-actions">{action}</div>
       </div>
       <div className={`${side}-editor editor-cell`}>
         <AnnotatedEditor

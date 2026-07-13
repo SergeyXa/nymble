@@ -47,4 +47,20 @@ export type Replacement = {
 export type TransformResponse = {
   resultText: string;
   replacements: Replacement[];
+  leakFindings: LeakFinding[];
+  warnings: string[];
+  leakDetectionStatus: LeakDetectionStatus;
 };
+
+export type TransformResult = Pick<TransformResponse, "resultText" | "replacements">;
+
+export type LeakFinding = {
+  type: string;
+  text: string;
+  start: number;
+  end: number;
+  score: number;
+  source: "presidio";
+};
+
+export type LeakDetectionStatus = "disabled" | "not-run" | "completed" | "unavailable";

@@ -7,8 +7,9 @@
     "build:client": "rm -rf dist/static dist/media && mkdir -p dist/static dist/media && cp -R media/. dist/media/ && esbuild src/client/composer/main.tsx src/client/dictionaries/main.tsx src/client/styles.css --bundle --outdir=dist/static --outbase=src/client --entry-names=[dir]/[name] --chunk-names=chunks/[name]-[hash] --asset-names=assets/[name]-[hash] --format=esm --splitting --minify --jsx=automatic --loader:.woff=file --loader:.woff2=file",
     "dev": "npm run build:client && tsx src/server/index.ts",
     "build": "npm run build:client && tsc -p tsconfig.json && mkdir -p dist/server/templates && cp -R src/server/templates/. dist/server/templates/",
+    "test": "tsx --test test/*.test.ts",
     "deploy": "./ops/deploy.sh",
-    "start": "node dist/server/index.js"
+    "start": "node --env-file-if-exists=.env.dev dist/server/index.js"
   },
   "dependencies": {
     "@codemirror/commands": "^6.10.4",

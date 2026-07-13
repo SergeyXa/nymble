@@ -1,7 +1,9 @@
 .nav-tabs-compact {
   align-self: flex-end;
+  flex: 1 1 auto;
+  min-width: 0;
   flex-wrap: nowrap;
-  max-width: calc(100% - 76px);
+  max-width: none;
   overflow-x: auto;
   overflow-y: hidden;
   border-bottom: 0;
@@ -24,10 +26,6 @@
 }
 
 @media (max-width: 991.98px) {
-  .nav-tabs-compact {
-    max-width: calc(100% - 42px);
-  }
-
   .nav-tabs-compact .nav-link {
     padding: 7px 9px;
   }

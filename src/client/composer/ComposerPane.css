@@ -8,6 +8,28 @@
   border-bottom: 1px solid var(--bs-border-color);
 }
 
+.pane-tab-controls,
+.pane-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pane-tab-controls {
+  min-width: 0;
+  flex: 1 1 auto;
+  align-self: stretch;
+}
+
+.pane-actions {
+  flex: 0 0 auto;
+}
+
+.leak-language-select {
+  width: 72px;
+  flex: 0 0 72px;
+}
+
 .pane-header-left {
   grid-area: source-header;
   padding-right: 56px;
@@ -54,5 +76,10 @@
 
   .target-editor {
     border-right: 0;
+  }
+
+  .pane-tab-controls,
+  .pane-actions {
+    gap: 6px;
   }
 }

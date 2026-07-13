@@ -1,11 +1,11 @@
-import type { DictionaryEntry, Replacement, TransformResponse } from "./types.js";
+import type { DictionaryEntry, Replacement, TransformResult } from "./types.js";
 
 type Candidate = {
   value: string;
   placeholder: string;
 };
 
-export function depersonalize(text: string, entries: DictionaryEntry[]): TransformResponse {
+export function depersonalize(text: string, entries: DictionaryEntry[]): TransformResult {
   const candidates = entries
     .flatMap((entry) => entry.values.map((value) => ({ value: value.value, placeholder: formatPlaceholder(entry.placeholder) })))
     .filter((candidate) => candidate.value.length > 0)
@@ -49,7 +49,7 @@ export function depersonalize(text: string, entries: DictionaryEntry[]): Transfo
   return { resultText, replacements };
 }
 
-export function personalize(text: string, entries: DictionaryEntry[]): TransformResponse {
+export function personalize(text: string, entries: DictionaryEntry[]): TransformResult {
   const primaryValues = new Map(
     entries
       .filter((entry) => entry.values[0]?.value)

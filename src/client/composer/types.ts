@@ -31,13 +31,36 @@ export type Replacement = {
 export type TransformResponse = {
   resultText: string;
   replacements: Replacement[];
+  leakFindings: LeakFinding[];
+  warnings: string[];
+  leakDetectionStatus: LeakDetectionStatus;
+};
+
+export type LeakFinding = {
+  type: string;
+  text: string;
+  start: number;
+  end: number;
+  score: number;
+  source: "presidio";
+};
+
+export type LeakDetectionStatus = "disabled" | "not-run" | "completed" | "unavailable";
+
+export type AppConfig = {
+  leakDetection: {
+    enabled: boolean;
+    provider: string;
+    defaultLanguage: string;
+    supportedLanguages: string[];
+  };
 };
 
 export type TextAnnotation = {
   start: number;
   end: number;
-  kind: "placeholder" | "replacement" | "result-placeholder" | "person" | "email" | "phone" | "organization" | "unknown";
-  source: "dictionary" | "ner";
+  kind: "placeholder" | "replacement" | "result-placeholder" | "leak" | "person" | "email" | "phone" | "organization" | "unknown";
+  source: "dictionary" | "ner" | "leak-detection";
   label?: string;
   confidence?: number;
 };

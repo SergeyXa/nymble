@@ -4,42 +4,91 @@ set -Eeuo pipefail
 APP_NAME="nymble"
 SOURCE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TARGET_DIR="${NYMBLE_DEPLOY_DIR:-/srv/nymble}"
+COMPOSE_FILE="$SOURCE_DIR/docker-compose.yml"
+RUNTIME_ENV_EXAMPLE="$SOURCE_DIR/ops/runtime.env.example"
+IMAGE_TAG="${NYMBLE_IMAGE_TAG:-$APP_NAME:$(git -C "$SOURCE_DIR" rev-parse --short=12 HEAD)-$(date -u +%Y%m%d%H%M%S)}"
 
-as_root() {
-  if [[ "${EUID}" -eq 0 ]]; then
+if [[ "${EUID}" -ne 0 ]]; then
+  echo "Run the Docker deployment with sudo:"
+  echo "  sudo npm run deploy"
+  exit 1
+fi
+
+compose() {
+  docker compose \
+    --project-name "$APP_NAME" \
+    --env-file "$TARGET_DIR/.env" \
+    -f "$TARGET_DIR/docker-compose.yml" \
     "$@"
-  else
-    sudo "$@"
-  fi
+}
+
+set_runtime_env_value() {
+  local key="$1"
+  local value="$2"
+
+  sed -i "/^${key}=/d" "$TARGET_DIR/.env"
+  printf '%s=%s\n' "$key" "$value" >> "$TARGET_DIR/.env"
+  chmod 600 "$TARGET_DIR/.env"
+}
+
+wait_for_health() {
+  local attempt
+
+  for attempt in {1..30}; do
+    if curl --fail --silent --show-error --max-time 2 http://127.0.0.1:3100/api/health >/dev/null; then
+      return 0
+    fi
+    sleep 1
+  done
+
+  return 1
+}
+
+remove_old_nymble_images() {
+  local image
+  local images=()
+
+  mapfile -t images < <(docker image ls "$APP_NAME" --format '{{.Repository}}:{{.Tag}}')
+  for image in "${images[@]}"; do
+    if [[ "$image" != "$IMAGE_TAG" ]]; then
+      docker image rm --force "$image"
+    fi
+  done
 }
 
 echo "Building $APP_NAME from $SOURCE_DIR"
-cd "$SOURCE_DIR"
-npm run build
+# Docker creates build output inside its build stages. Host dist/ is excluded
+# by .dockerignore, so this privileged command never creates root-owned files
+# in the working tree.
+docker build --tag "$IMAGE_TAG" "$SOURCE_DIR"
 
 echo "Creating runtime directory: $TARGET_DIR"
-as_root mkdir -p "$TARGET_DIR/data" "$TARGET_DIR/dist"
+mkdir -p "$TARGET_DIR/data"
 
 if [[ ! -f "$TARGET_DIR/data/dictionaries.json" && -f "$SOURCE_DIR/data/dictionaries.json" ]]; then
   echo "Seeding initial dictionary data"
-  as_root cp "$SOURCE_DIR/data/dictionaries.json" "$TARGET_DIR/data/dictionaries.json"
+  cp "$SOURCE_DIR/data/dictionaries.json" "$TARGET_DIR/data/dictionaries.json"
+fi
+chown -R 1000:1000 "$TARGET_DIR/data"
+
+echo "Installing Compose configuration"
+install -m 644 "$COMPOSE_FILE" "$TARGET_DIR/docker-compose.yml"
+if [[ ! -f "$TARGET_DIR/.env" ]]; then
+  install -m 600 "$RUNTIME_ENV_EXAMPLE" "$TARGET_DIR/.env"
+fi
+set_runtime_env_value "NYMBLE_IMAGE_TAG" "$IMAGE_TAG"
+
+echo "Starting Compose services"
+compose up -d --no-build --remove-orphans
+
+if ! wait_for_health; then
+  echo "Nymble did not become healthy. The previous Nymble images were kept."
+  exit 1
 fi
 
-echo "Copying runtime files"
-as_root rsync -a --delete "$SOURCE_DIR/dist/" "$TARGET_DIR/dist/"
-as_root rsync -a --delete "$SOURCE_DIR/dist/static/" "$TARGET_DIR/dist/static/"
-as_root rsync -a "$SOURCE_DIR/package.json" "$SOURCE_DIR/package-lock.json" "$TARGET_DIR/"
-as_root rsync -a "$SOURCE_DIR/ops/install-systemd-service.sh" "$TARGET_DIR/"
-
-echo "Installing production dependencies"
-as_root npm install --omit=dev --prefix "$TARGET_DIR"
+remove_old_nymble_images
 
 echo
 echo "Deploy complete: $TARGET_DIR"
 echo
-echo "If the systemd service is not installed yet, run:"
-echo "  sudo $TARGET_DIR/install-systemd-service.sh"
-echo
-echo "This deploy script does not restart the service."
-echo "Start it manually when you are ready:"
-echo "  sudo systemctl start $APP_NAME"
+echo "Nymble is available at http://127.0.0.1:3100"

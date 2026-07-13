@@ -1,0 +1,27 @@
+services:
+  nymble:
+    image: ${NYMBLE_IMAGE_TAG:-nymble:local}
+    restart: unless-stopped
+    environment:
+      HOST: 0.0.0.0
+      PORT: 3100
+      DICTIONARY_PATH: /app/data/dictionaries.json
+      LEAK_DETECTION_ENABLED: ${LEAK_DETECTION_ENABLED:-true}
+      LEAK_DETECTION_PROVIDER: ${LEAK_DETECTION_PROVIDER:-presidio}
+      PRESIDIO_ANALYZER_URL: http://presidio-analyzer:3000
+      PRESIDIO_DEFAULT_LANGUAGE: ${PRESIDIO_DEFAULT_LANGUAGE:-en}
+      PRESIDIO_SUPPORTED_LANGUAGES: ${PRESIDIO_SUPPORTED_LANGUAGES:-en}
+      PRESIDIO_SCORE_THRESHOLD: ${PRESIDIO_SCORE_THRESHOLD:-0.5}
+    volumes:
+      - ./data:/app/data
+    ports:
+      - "127.0.0.1:3100:3100"
+    depends_on:
+      - presidio-analyzer
+
+  presidio-analyzer:
+    image: ghcr.io/data-privacy-stack/presidio-analyzer:latest
+    restart: unless-stopped
+    mem_limit: 1200m
+    expose:
+      - "3000"

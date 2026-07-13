@@ -20,6 +20,10 @@ const initialConfig: AppConfig = {
   }
 };
 
+const STARTER_EXAMPLE_COOKIE = "nymble_starter_example_seen";
+const STARTER_EXAMPLE_TEXT =
+  "Alex Morgan, Chief Technology Officer at Example Systems Ltd, will share the project update with the team in Paris.";
+
 export function Page() {
   const [dictionaries, setDictionaries] = useState<Dictionary[]>([]);
   const [selectedDictionaryId, setSelectedDictionaryId] = useState("");
@@ -32,6 +36,7 @@ export function Page() {
   const [appConfig, setAppConfig] = useState<AppConfig>(initialConfig);
   const [leakDetectionLanguage, setLeakDetectionLanguage] = useState("en");
   const [status, setStatus] = useState("");
+  const [starterExampleActive, setStarterExampleActive] = useState(() => !hasCookie(STARTER_EXAMPLE_COOKIE));
   const sourceEditorRef = useRef<AnnotatedEditorHandle>(null);
 
   const currentDictionary = useMemo(
@@ -48,10 +53,14 @@ export function Page() {
         if (cancelled) {
           return;
         }
+        const starterWorkDictionary = starterExampleActive ? items.find(isStarterExampleWorkDictionary) : undefined;
         setDictionaries(items);
-        setSelectedDictionaryId(items[0]?.id || "");
+        setSelectedDictionaryId(starterWorkDictionary?.id || items[0]?.id || "");
         setAppConfig(loadedConfig);
         setLeakDetectionLanguage(loadedConfig.leakDetection.defaultLanguage);
+        if (starterWorkDictionary) {
+          setSourceText(STARTER_EXAMPLE_TEXT);
+        }
         setStatus(items.length ? "" : "Create a dictionary first.");
       })
       .catch((error: Error) => {
@@ -114,6 +123,8 @@ export function Page() {
   }
 
   function selectTab(side: "source" | "target", tabId: string) {
+    dismissStarterExample();
+
     if (tabId === "original") {
       setDirection(side === "source" ? "depersonalize" : "personalize");
     } else {
@@ -127,6 +138,7 @@ export function Page() {
   }
 
   function swapDirection() {
+    dismissStarterExample();
     setDirection((current) => (current === "depersonalize" ? "personalize" : "depersonalize"));
     setSourceText(resultText);
     setResultText("");
@@ -135,6 +147,7 @@ export function Page() {
   }
 
   function clearText() {
+    dismissStarterExample();
     setSourceText("");
     setResultText("");
     setReplacements([]);
@@ -155,8 +168,20 @@ export function Page() {
   }
 
   function updateSourceText(value: string) {
+    if (starterExampleActive && value !== STARTER_EXAMPLE_TEXT) {
+      dismissStarterExample();
+    }
     setSourceText(value);
     resetLeakDetectionResult();
+  }
+
+  function dismissStarterExample() {
+    if (!starterExampleActive) {
+      return;
+    }
+
+    document.cookie = `${STARTER_EXAMPLE_COOKIE}=1; Max-Age=31536000; Path=/; SameSite=Lax`;
+    setStarterExampleActive(false);
   }
 
   async function copyText() {
@@ -288,4 +313,17 @@ export function Page() {
       ) : null}
     </main>
   );
+}
+
+function hasCookie(name: string): boolean {
+  return document.cookie.split(";").some((item) => item.trim().startsWith(`${name}=`));
+}
+
+function isStarterExampleWorkDictionary(dictionary: Dictionary): boolean {
+  if (dictionary.name !== "{Work}") {
+    return false;
+  }
+
+  const placeholders = new Set(dictionary.entries.map((entry) => entry.placeholder));
+  return ["ES company", "AM name", "D1 role"].every((placeholder) => placeholders.has(placeholder));
 }

@@ -1,0 +1,97 @@
+{
+  "dictionaries": [
+    {
+      "name": "{Work}",
+      "entries": [
+        {
+          "placeholder": "ES company",
+          "values": [
+            {
+              "value": "Example Systems Ltd",
+              "position": 0
+            },
+            {
+              "value": "Example Systems",
+              "position": 1
+            }
+          ]
+        },
+        {
+          "placeholder": "AM name",
+          "values": [
+            {
+              "value": "Alex Morgan",
+              "position": 0
+            },
+            {
+              "value": "Alex",
+              "position": 1
+            }
+          ]
+        },
+        {
+          "placeholder": "D1 role",
+          "values": [
+            {
+              "value": "Chief Technology Officer",
+              "position": 0
+            },
+            {
+              "value": "CTO",
+              "position": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "{Personal}",
+      "entries": [
+        {
+          "placeholder": "TJ name",
+          "values": [
+            {
+              "value": "Taylor Jordan",
+              "position": 0
+            },
+            {
+              "value": "Taylor",
+              "position": 1
+            }
+          ]
+        },
+        {
+          "placeholder": "TJ email",
+          "values": [
+            {
+              "value": "taylor.jordan@example.test",
+              "position": 0
+            }
+          ]
+        },
+        {
+          "placeholder": "TJ home city",
+          "values": [
+            {
+              "value": "Riverton",
+              "position": 0
+            }
+          ]
+        },
+        {
+          "placeholder": "SJ name",
+          "values": [
+            {
+              "value": "Sam Jordan",
+              "position": 0
+            },
+            {
+              "value": "Sam",
+              "position": 1
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

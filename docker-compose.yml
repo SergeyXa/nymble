@@ -15,7 +15,7 @@ services:
     volumes:
       - ./data:/app/data
     ports:
-      - "127.0.0.1:3100:3100"
+      - "127.0.0.1:${NYMBLE_HOST_PORT:-3100}:3100"
     depends_on:
       - presidio-analyzer
 

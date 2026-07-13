@@ -2,6 +2,7 @@
   "name": "nymble",
   "version": "0.1.0",
   "private": true,
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "build:client": "rm -rf dist/static dist/media && mkdir -p dist/static dist/media && cp -R media/. dist/media/ && esbuild src/client/composer/main.tsx src/client/dictionaries/main.tsx src/client/styles.css --bundle --outdir=dist/static --outbase=src/client --entry-names=[dir]/[name] --chunk-names=chunks/[name]-[hash] --asset-names=assets/[name]-[hash] --format=esm --splitting --minify --jsx=automatic --loader:.woff=file --loader:.woff2=file",

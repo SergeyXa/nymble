@@ -1,8 +1,9 @@
 node_modules/
 dist/
 
-# Runtime data. Keep only placeholders such as data/.gitkeep.
+# Runtime data. The tracked sample is used to seed a new deployment.
 data/*.json
+!data/dictionaries.json
 data/*.sqlite
 data/*.sqlite-*
 data/*.db

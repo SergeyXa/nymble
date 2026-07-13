@@ -1,12 +1,21 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-APP_NAME="nymble"
 SOURCE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TARGET_DIR="${NYMBLE_DEPLOY_DIR:-/srv/nymble}"
+APP_NAME="${NYMBLE_DEPLOY_NAME:-}"
+if [[ -z "$APP_NAME" && -f "$TARGET_DIR/.env" ]]; then
+  APP_NAME="$(sed -n 's/^NYMBLE_DEPLOY_NAME=//p' "$TARGET_DIR/.env" | tail -n 1)"
+fi
+APP_NAME="${APP_NAME:-nymble}"
 COMPOSE_FILE="$SOURCE_DIR/docker-compose.yml"
 RUNTIME_ENV_EXAMPLE="$SOURCE_DIR/ops/runtime.env.example"
 IMAGE_TAG="${NYMBLE_IMAGE_TAG:-$APP_NAME:$(git -C "$SOURCE_DIR" rev-parse --short=12 HEAD)-$(date -u +%Y%m%d%H%M%S)}"
+
+if [[ ! "$APP_NAME" =~ ^[a-z0-9][a-z0-9_-]*$ ]]; then
+  echo "NYMBLE_DEPLOY_NAME must use lowercase letters, digits, hyphens, or underscores."
+  exit 1
+fi
 
 if [[ "${EUID}" -ne 0 ]]; then
   echo "Run the Docker deployment with sudo:"
@@ -31,11 +40,21 @@ set_runtime_env_value() {
   chmod 600 "$TARGET_DIR/.env"
 }
 
+get_runtime_env_value() {
+  local key="$1"
+  local default_value="$2"
+  local value
+
+  value="$(sed -n "s/^${key}=//p" "$TARGET_DIR/.env" | tail -n 1)"
+  printf '%s' "${value:-$default_value}"
+}
+
 wait_for_health() {
   local attempt
+  local url="http://127.0.0.1:${HOST_PORT}/api/health"
 
   for attempt in {1..30}; do
-    if curl --fail --silent --show-error --max-time 2 http://127.0.0.1:3100/api/health >/dev/null; then
+    if curl --fail --silent --show-error --max-time 2 "$url" >/dev/null; then
       return 0
     fi
     sleep 1
@@ -76,7 +95,12 @@ install -m 644 "$COMPOSE_FILE" "$TARGET_DIR/docker-compose.yml"
 if [[ ! -f "$TARGET_DIR/.env" ]]; then
   install -m 600 "$RUNTIME_ENV_EXAMPLE" "$TARGET_DIR/.env"
 fi
+set_runtime_env_value "NYMBLE_DEPLOY_NAME" "$APP_NAME"
 set_runtime_env_value "NYMBLE_IMAGE_TAG" "$IMAGE_TAG"
+if [[ -n "${NYMBLE_HOST_PORT:-}" ]]; then
+  set_runtime_env_value "NYMBLE_HOST_PORT" "$NYMBLE_HOST_PORT"
+fi
+HOST_PORT="$(get_runtime_env_value "NYMBLE_HOST_PORT" "3100")"
 
 echo "Starting Compose services"
 compose up -d --no-build --remove-orphans
@@ -91,4 +115,4 @@ remove_old_nymble_images
 echo
 echo "Deploy complete: $TARGET_DIR"
 echo
-echo "Nymble is available at http://127.0.0.1:3100"
+echo "Nymble is available at http://127.0.0.1:$HOST_PORT"

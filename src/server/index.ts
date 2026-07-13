@@ -54,6 +54,10 @@ await app.register(fastifyStatic, {
   decorateReply: false
 });
 
+app.get("/apple-touch-icon.png", async (_request, reply) => {
+  return reply.sendFile("ios/apple-touch-icon-180x180.png", mediaRoot);
+});
+
 app.get("/", async (_request, reply) => {
   return reply.type("text/html").send(composerPage());
 });

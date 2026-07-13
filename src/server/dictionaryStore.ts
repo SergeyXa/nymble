@@ -61,11 +61,15 @@ export class JsonDictionaryStore {
       }))
     };
 
+    await this.writeDictionary(next);
+    return next;
+  }
+
+  private async writeDictionary(dictionary: DictionaryResponse): Promise<void> {
     await mkdir(path.dirname(this.filePath), { recursive: true });
     const tempPath = `${this.filePath}.${process.pid}.tmp`;
-    await writeFile(tempPath, `${JSON.stringify(next, null, 2)}\n`, "utf8");
+    await writeFile(tempPath, `${JSON.stringify(dictionary, null, 2)}\n`, "utf8");
     await rename(tempPath, this.filePath);
-    return next;
   }
 
   private async ensureFile(): Promise<void> {
@@ -177,14 +181,10 @@ function readSaveValue(value: string | { value: string }): string {
 }
 
 function validatePlaceholder(placeholder: string): void {
-  if (!placeholder.startsWith("{") || !placeholder.endsWith("}")) {
-    throw new DictionaryValidationError(`Placeholder must be wrapped in braces: ${placeholder}`);
-  }
-  const inner = placeholder.slice(1, -1);
-  if (!inner.trim()) {
+  if (!placeholder.trim()) {
     throw new DictionaryValidationError("Placeholder cannot be empty");
   }
-  if (inner.includes("{") || inner.includes("}") || /[\r\n]/.test(inner)) {
+  if (placeholder.includes("{") || placeholder.includes("}") || /[\r\n]/.test(placeholder)) {
     throw new DictionaryValidationError(`Invalid placeholder: ${placeholder}`);
   }
 }

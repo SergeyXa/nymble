@@ -70,3 +70,33 @@ body:has(.composer-page) {
     padding: 0;
   }
 }
+
+/*
+ * A phone in landscape does not have enough vertical space for both editor
+ * panes. Let the document grow and scroll in that case instead of clipping
+ * the lower pane inside the viewport-height composer.
+ */
+@media (max-width: 991.98px) and (orientation: landscape) {
+  html:has(.composer-page),
+  body:has(.composer-page) {
+    height: auto;
+    min-height: 100%;
+    overflow: auto;
+  }
+
+  .composer-page {
+    height: auto;
+    max-height: none;
+    min-height: 100dvh;
+    overflow: visible;
+  }
+
+  .composer-shell {
+    flex: 0 0 auto;
+    overflow: visible;
+  }
+
+  .composer-grid {
+    height: auto;
+  }
+}

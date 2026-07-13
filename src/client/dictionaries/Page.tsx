@@ -177,12 +177,29 @@ type EntryCardProps = {
 };
 
 function EntryCard({ entry, onChange, onDelete }: EntryCardProps) {
+  const hintId = `${entry.localId}-placeholder-hint`;
+
   return (
     <section className="dictionary-entry border rounded-3 p-3">
       <div className="row g-3">
         <div className="col-lg-4">
-          <label className="form-label">Placeholder</label>
-          <input className="form-control" placeholder="{CEO}" value={entry.placeholder} onChange={(event) => onChange((current) => ({ ...current, placeholder: event.target.value }))} />
+          <label className="form-label">Placeholder name</label>
+          <div className="input-group" aria-describedby={hintId}>
+            <span className="input-group-text" aria-hidden="true">{"{"}</span>
+            <input
+              className="form-control"
+              maxLength={64}
+              pattern="[^{}\\r\\n]+"
+              placeholder="CEO"
+              title="Use a name without curly braces"
+              value={entry.placeholder}
+              onChange={(event) => onChange((current) => ({ ...current, placeholder: event.target.value }))}
+              onInvalid={(event) => event.currentTarget.setCustomValidity("Placeholder names cannot contain curly braces or line breaks.")}
+              onInput={(event) => event.currentTarget.setCustomValidity("")}
+            />
+            <span className="input-group-text" aria-hidden="true">{"}"}</span>
+          </div>
+          <div id={hintId} className="form-text">Curly braces are added automatically in depersonalized text.</div>
         </div>
         <div className="col-lg-8">
           <label className="form-label">Values</label>

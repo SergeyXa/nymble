@@ -7,7 +7,7 @@ type Candidate = {
 
 export function depersonalize(text: string, entries: DictionaryEntry[]): TransformResponse {
   const candidates = entries
-    .flatMap((entry) => entry.values.map((value) => ({ value: value.value, placeholder: entry.placeholder })))
+    .flatMap((entry) => entry.values.map((value) => ({ value: value.value, placeholder: formatPlaceholder(entry.placeholder) })))
     .filter((candidate) => candidate.value.length > 0)
     .sort((a, b) => b.value.length - a.value.length);
 
@@ -53,7 +53,7 @@ export function personalize(text: string, entries: DictionaryEntry[]): Transform
   const primaryValues = new Map(
     entries
       .filter((entry) => entry.values[0]?.value)
-      .map((entry) => [entry.placeholder.toLocaleLowerCase(), entry] as const)
+      .map((entry) => [formatPlaceholder(entry.placeholder).toLocaleLowerCase(), entry] as const)
   );
 
   const replacements: Replacement[] = [];
@@ -76,7 +76,7 @@ export function personalize(text: string, entries: DictionaryEntry[]): Transform
     replacements.push({
       sourceText: placeholder,
       replacementText,
-      placeholder: entry.placeholder,
+      placeholder: formatPlaceholder(entry.placeholder),
       start: offset,
       end: offset + placeholder.length,
       resultStart,
@@ -89,6 +89,10 @@ export function personalize(text: string, entries: DictionaryEntry[]): Transform
   resultText += text.slice(cursor);
 
   return { resultText, replacements };
+}
+
+function formatPlaceholder(name: string): string {
+  return `{${name}}`;
 }
 
 function findCandidateAt(text: string, start: number, candidates: Candidate[]): Candidate | undefined {

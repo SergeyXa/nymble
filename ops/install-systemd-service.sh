@@ -37,15 +37,6 @@ fi
 mkdir -p "$APP_DIR/data"
 chown -R "$RUN_USER:$RUN_GROUP" "$APP_DIR/data"
 
-if [[ -f "$SERVICE_FILE" ]]; then
-  echo "Systemd service already exists: $SERVICE_FILE"
-  echo "Leaving it unchanged."
-  echo
-  echo "Start it manually when you are ready:"
-  echo "  sudo systemctl start $SERVICE_NAME"
-  exit 0
-fi
-
 cat > "$SERVICE_FILE" <<EOF_SERVICE
 [Unit]
 Description=Nymble
@@ -73,12 +64,18 @@ EOF_SERVICE
 systemctl daemon-reload
 systemctl enable "$SERVICE_NAME"
 
-echo
-echo "Installed systemd service: $SERVICE_FILE"
-echo "The service was enabled, but not started."
-echo
-echo "Start it manually when you are ready:"
-echo "  sudo systemctl start $SERVICE_NAME"
+if systemctl is-active --quiet "$SERVICE_NAME"; then
+  systemctl restart "$SERVICE_NAME"
+  echo
+  echo "Updated and restarted systemd service: $SERVICE_FILE"
+else
+  echo
+  echo "Installed or updated systemd service: $SERVICE_FILE"
+  echo "The service was enabled, but remains stopped."
+  echo
+  echo "Start it manually when you are ready:"
+  echo "  sudo systemctl start $SERVICE_NAME"
+fi
 echo
 echo "Useful checks:"
 echo "  sudo systemctl status $SERVICE_NAME"

@@ -194,9 +194,8 @@ function dedupeValues(values: string[]): string[] {
   const result: string[] = [];
 
   for (const value of values) {
-    const key = value.toLocaleLowerCase();
-    if (!seen.has(key)) {
-      seen.add(key);
+    if (!seen.has(value)) {
+      seen.add(value);
       result.push(value);
     }
   }

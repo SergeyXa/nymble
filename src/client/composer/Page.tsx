@@ -1,7 +1,7 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { fetchAppConfig, fetchDictionaries, transformText } from "./api";
 import { resultAnnotations, sourceAnnotations } from "./annotations";
-import type { AnnotatedEditorHandle } from "./AnnotatedEditor";
+import type { AnnotatedEditorHandle, EditorScrollPosition } from "./AnnotatedEditor";
 import { ComposerPane } from "./ComposerPane";
 import type {
   AppConfig,
@@ -38,6 +38,15 @@ export function Page() {
   const [status, setStatus] = useState("");
   const [starterExampleActive, setStarterExampleActive] = useState(() => !hasCookie(STARTER_EXAMPLE_COOKIE));
   const sourceEditorRef = useRef<AnnotatedEditorHandle>(null);
+  const targetEditorRef = useRef<AnnotatedEditorHandle>(null);
+
+  const syncSourceScroll = useCallback((position: EditorScrollPosition) => {
+    targetEditorRef.current?.scrollToRatio(position.ratio);
+  }, []);
+
+  const syncTargetScroll = useCallback((position: EditorScrollPosition) => {
+    sourceEditorRef.current?.scrollToRatio(position.ratio);
+  }, []);
 
   const currentDictionary = useMemo(
     () => dictionaries.find((dictionary) => dictionary.id === selectedDictionaryId),
@@ -256,6 +265,7 @@ export function Page() {
               </>
             }
             onChange={updateSourceText}
+            onScroll={syncSourceScroll}
             onSelectTab={selectTab}
           />
 
@@ -280,6 +290,7 @@ export function Page() {
             direction={direction}
             readOnly
             placeholder="Result appears here"
+            editorRef={targetEditorRef}
             action={
               <button
                 className="btn btn-outline-primary btn-sm icon-button"
@@ -291,6 +302,7 @@ export function Page() {
                 <i className="bi bi-box-arrow-up-right" aria-hidden="true"></i>
               </button>
             }
+            onScroll={syncTargetScroll}
             onSelectTab={selectTab}
           />
         </div>

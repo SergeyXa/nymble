@@ -1,5 +1,5 @@
 import React from "react";
-import { AnnotatedEditor, AnnotatedEditorHandle } from "./AnnotatedEditor";
+import { AnnotatedEditor, AnnotatedEditorHandle, EditorScrollPosition } from "./AnnotatedEditor";
 import { DictionaryTabs } from "./DictionaryTabs";
 import type { Dictionary, TextAnnotation, TransformDirection } from "./types";
 
@@ -16,6 +16,7 @@ type ComposerPaneProps = {
   afterTabs?: React.ReactNode;
   action: React.ReactNode;
   onChange?: (value: string) => void;
+  onScroll?: (position: EditorScrollPosition) => void;
   onSelectTab: (side: "source" | "target", tabId: string) => void;
 };
 
@@ -32,6 +33,7 @@ export function ComposerPane({
   afterTabs,
   action,
   onChange,
+  onScroll,
   onSelectTab
 }: ComposerPaneProps) {
   return (
@@ -58,6 +60,7 @@ export function ComposerPane({
           placeholder={placeholder}
           autoFocus={side === "source"}
           onChange={onChange}
+          onScroll={onScroll}
         />
       </div>
     </>

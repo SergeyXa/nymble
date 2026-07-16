@@ -14,6 +14,11 @@ import type { TextAnnotation } from "./types";
 
 export type AnnotatedEditorHandle = {
   focus: () => void;
+  scrollToRatio: (ratio: number) => void;
+};
+
+export type EditorScrollPosition = {
+  ratio: number;
 };
 
 type AnnotatedEditorProps = {
@@ -23,21 +28,42 @@ type AnnotatedEditorProps = {
   placeholder?: string;
   autoFocus?: boolean;
   onChange?: (value: string) => void;
+  onScroll?: (position: EditorScrollPosition) => void;
 };
 
 export const AnnotatedEditor = forwardRef<AnnotatedEditorHandle, AnnotatedEditorProps>(
-  ({ value, annotations, readOnly = false, placeholder = "", autoFocus = false, onChange }, ref) => {
+  ({ value, annotations, readOnly = false, placeholder = "", autoFocus = false, onChange, onScroll }, ref) => {
     const hostRef = useRef<HTMLDivElement | null>(null);
     const viewRef = useRef<EditorView | null>(null);
     const onChangeRef = useRef(onChange);
+    const onScrollRef = useRef(onScroll);
     const readOnlyCompartment = useRef(new Compartment());
     const annotationsCompartment = useRef(new Compartment());
+    const suppressScrollRef = useRef(false);
+    const scrollAnimationFrameRef = useRef<number | null>(null);
 
     onChangeRef.current = onChange;
+    onScrollRef.current = onScroll;
 
     useImperativeHandle(ref, () => ({
       focus() {
         viewRef.current?.focus();
+      },
+      scrollToRatio(ratio) {
+        const scroller = viewRef.current?.scrollDOM;
+        if (!scroller) {
+          return;
+        }
+
+        suppressScrollRef.current = true;
+        scroller.scrollTop = Math.max(0, Math.min(1, ratio)) * (scroller.scrollHeight - scroller.clientHeight);
+        if (scrollAnimationFrameRef.current !== null) {
+          window.cancelAnimationFrame(scrollAnimationFrameRef.current);
+        }
+        scrollAnimationFrameRef.current = window.requestAnimationFrame(() => {
+          suppressScrollRef.current = false;
+          scrollAnimationFrameRef.current = null;
+        });
       }
     }));
 
@@ -67,11 +93,24 @@ export const AnnotatedEditor = forwardRef<AnnotatedEditorHandle, AnnotatedEditor
       });
 
       viewRef.current = view;
+      const handleScroll = () => {
+        if (suppressScrollRef.current) {
+          return;
+        }
+
+        const scrollableHeight = view.scrollDOM.scrollHeight - view.scrollDOM.clientHeight;
+        onScrollRef.current?.({ ratio: scrollableHeight > 0 ? view.scrollDOM.scrollTop / scrollableHeight : 0 });
+      };
+      view.scrollDOM.addEventListener("scroll", handleScroll);
       if (autoFocus) {
         view.focus();
       }
 
       return () => {
+        view.scrollDOM.removeEventListener("scroll", handleScroll);
+        if (scrollAnimationFrameRef.current !== null) {
+          window.cancelAnimationFrame(scrollAnimationFrameRef.current);
+        }
         view.destroy();
         viewRef.current = null;
       };

@@ -12,6 +12,7 @@ test("leak detection configuration is read from environment variables", () => {
     process.env.PRESIDIO_DEFAULT_LANGUAGE = "fr";
     process.env.PRESIDIO_SUPPORTED_LANGUAGES = "en,fr";
     process.env.PRESIDIO_SCORE_THRESHOLD = "0.7";
+    process.env.PRESIDIO_IGNORED_ENTITIES = "date_time, url";
 
     assert.deepEqual(loadConfig().leakDetection, {
       enabled: true,
@@ -19,7 +20,8 @@ test("leak detection configuration is read from environment variables", () => {
       presidioAnalyzerUrl: "http://presidio-analyzer:3000",
       defaultLanguage: "fr",
       supportedLanguages: ["fr", "en"],
-      scoreThreshold: 0.7
+      scoreThreshold: 0.7,
+      ignoredEntities: ["DATE_TIME", "URL"]
     });
   } finally {
     process.env = original;

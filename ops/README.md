@@ -74,6 +74,7 @@ LEAK_DETECTION_PROVIDER=presidio
 PRESIDIO_DEFAULT_LANGUAGE=en
 PRESIDIO_SUPPORTED_LANGUAGES=en
 PRESIDIO_SCORE_THRESHOLD=0.5
+PRESIDIO_IGNORED_ENTITIES=DATE_TIME
 ```
 
 `PRESIDIO_ANALYZER_URL` is deliberately fixed in `docker-compose.yml` as
@@ -85,6 +86,10 @@ language there only after the Presidio image has been configured to support it.
 Use `LEAK_DETECTION_ENABLED=false` to disable calls for every user. The UI also
 has an `off` option for a single transform; it does not change the runtime
 configuration.
+
+`PRESIDIO_IGNORED_ENTITIES` is a comma-separated list of Presidio entity
+types to omit from highlighting. Its default, `DATE_TIME`, excludes dates,
+times, and weekday names. Set it to an empty value to show those findings.
 
 ## Parallel test deployment
 

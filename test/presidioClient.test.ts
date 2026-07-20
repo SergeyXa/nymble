@@ -42,3 +42,15 @@ test("Presidio client rejects non-array responses without including response con
 
   await assert.rejects(client.analyze("sensitive text", "en"), /invalid response/);
 });
+
+test("Presidio client omits configured entity types", async () => {
+  const fetchMock: typeof fetch = async () => new Response(JSON.stringify([
+    { entity_type: "DATE_TIME", start: 0, end: 6, score: 0.9 },
+    { entity_type: "EMAIL_ADDRESS", start: 7, end: 23, score: 0.9 }
+  ]), { status: 200, headers: { "Content-Type": "application/json" } });
+  const client = new PresidioClient("http://127.0.0.1:5002", 0.5, fetchMock, ["DATE_TIME"]);
+
+  const findings = await client.analyze("Monday john@example.com", "en");
+
+  assert.deepEqual(findings.map((finding) => finding.type), ["EMAIL_ADDRESS"]);
+});

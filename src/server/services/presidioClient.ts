@@ -18,8 +18,13 @@ export class PresidioClient implements LeakDetector {
   constructor(
     private readonly analyzerUrl: string,
     private readonly scoreThreshold: number,
-    private readonly fetchImplementation: Fetch = globalThis.fetch
-  ) {}
+    private readonly fetchImplementation: Fetch = globalThis.fetch,
+    ignoredEntities: readonly string[] = []
+  ) {
+    this.ignoredEntities = new Set(ignoredEntities.map((entity) => entity.toUpperCase()));
+  }
+
+  private readonly ignoredEntities: ReadonlySet<string>;
 
   async analyze(text: string, language: string): Promise<LeakFinding[]> {
     const response = await this.fetchImplementation(`${this.analyzerUrl}/analyze`, {
@@ -42,7 +47,9 @@ export class PresidioClient implements LeakDetector {
     const findings: LeakFinding[] = [];
 
     for (const item of payload) {
-      if (!isPresidioFinding(item) || item.score < this.scoreThreshold) {
+      if (!isPresidioFinding(item)
+        || item.score < this.scoreThreshold
+        || this.ignoredEntities.has(item.entity_type.toUpperCase())) {
         continue;
       }
 

@@ -58,7 +58,7 @@ export function createLeakDetectionService(
   onError?: LeakDetectionErrorHandler
 ): LeakDetectionService {
   const detector = config.provider === "presidio"
-    ? new PresidioClient(config.presidioAnalyzerUrl, config.scoreThreshold)
+    ? new PresidioClient(config.presidioAnalyzerUrl, config.scoreThreshold, globalThis.fetch, config.ignoredEntities)
     : undefined;
 
   return new LeakDetectionService(config, detector, onError);

@@ -14,6 +14,7 @@ export type LeakDetectionConfig = {
   defaultLanguage: string;
   supportedLanguages: string[];
   scoreThreshold: number;
+  ignoredEntities: string[];
 };
 
 export function loadConfig(): AppConfig {
@@ -24,6 +25,7 @@ export function loadConfig(): AppConfig {
   const defaultLanguage = normalizeLanguage(process.env.PRESIDIO_DEFAULT_LANGUAGE) || "en";
   const supportedLanguages = parseLanguages(process.env.PRESIDIO_SUPPORTED_LANGUAGES || "en", defaultLanguage);
   const scoreThreshold = parseScoreThreshold(process.env.PRESIDIO_SCORE_THRESHOLD);
+  const ignoredEntities = parseEntityTypes(process.env.PRESIDIO_IGNORED_ENTITIES);
 
   return {
     host,
@@ -35,7 +37,8 @@ export function loadConfig(): AppConfig {
       presidioAnalyzerUrl: (process.env.PRESIDIO_ANALYZER_URL || "http://127.0.0.1:5002").replace(/\/+$/, ""),
       defaultLanguage,
       supportedLanguages,
-      scoreThreshold
+      scoreThreshold,
+      ignoredEntities
     }
   };
 }
@@ -60,6 +63,13 @@ function parseLanguages(value: string, defaultLanguage: string): string[] {
     .filter((language): language is string => Boolean(language));
 
   return [...new Set([defaultLanguage, ...languages])];
+}
+
+function parseEntityTypes(value: string | undefined): string[] {
+  return [...new Set((value ?? "DATE_TIME")
+    .split(",")
+    .map((entity) => entity.trim().toUpperCase())
+    .filter(Boolean))];
 }
 
 function normalizeLanguage(value: string | undefined): string | undefined {

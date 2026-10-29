@@ -39,3 +39,7 @@
 .dictionary-entry textarea {
   min-height: 120px;
 }
+
+.dictionaries-page--popup {
+  max-width: 1180px;
+}

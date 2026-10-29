@@ -1,8 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { subscribeToDictionaryUpdates } from "../dictionaryUpdates";
 import { fetchAppConfig, fetchDictionaries, transformText } from "./api";
 import { resultAnnotations, sourceAnnotations } from "./annotations";
 import type { AnnotatedEditorHandle, EditorScrollPosition } from "./AnnotatedEditor";
 import { ComposerPane } from "./ComposerPane";
+import { selectAvailableDictionaryId } from "./dictionarySelection";
 import type {
   AppConfig,
   Dictionary,
@@ -39,6 +41,17 @@ export function Page() {
   const [starterExampleActive, setStarterExampleActive] = useState(() => !hasCookie(STARTER_EXAMPLE_COOKIE));
   const sourceEditorRef = useRef<AnnotatedEditorHandle>(null);
   const targetEditorRef = useRef<AnnotatedEditorHandle>(null);
+  const dictionaryWindowRef = useRef<Window | null>(null);
+
+  const refreshDictionaries = useCallback(async () => {
+    try {
+      const items = await fetchDictionaries();
+      setDictionaries(items);
+      setSelectedDictionaryId((current) => selectAvailableDictionaryId(items, current));
+    } catch (error) {
+      setStatus((error as Error).message);
+    }
+  }, []);
 
   const syncSourceScroll = useCallback((position: EditorScrollPosition) => {
     targetEditorRef.current?.scrollToRatio(position.ratio);
@@ -82,6 +95,27 @@ export function Page() {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => subscribeToDictionaryUpdates(() => {
+    void refreshDictionaries();
+  }), [refreshDictionaries]);
+
+  useEffect(() => {
+    const refreshAfterPopup = () => {
+      const dictionaryWindow = dictionaryWindowRef.current;
+      if (!dictionaryWindow) {
+        return;
+      }
+
+      void refreshDictionaries();
+      if (dictionaryWindow.closed) {
+        dictionaryWindowRef.current = null;
+      }
+    };
+
+    window.addEventListener("focus", refreshAfterPopup);
+    return () => window.removeEventListener("focus", refreshAfterPopup);
+  }, [refreshDictionaries]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -202,6 +236,32 @@ export function Page() {
     }
   }
 
+  function openDictionaryEditor() {
+    const existingWindow = dictionaryWindowRef.current;
+    if (existingWindow && !existingWindow.closed) {
+      existingWindow.focus();
+      return;
+    }
+
+    const width = Math.min(1100, Math.max(720, window.screen.availWidth - 64));
+    const height = Math.min(860, Math.max(600, window.screen.availHeight - 64));
+    const left = Math.max(0, Math.round((window.screen.availWidth - width) / 2));
+    const top = Math.max(0, Math.round((window.screen.availHeight - height) / 2));
+    const dictionaryWindow = window.open(
+      "/dictionaries?popup=1",
+      "nymble-dictionaries",
+      `popup=yes,width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`
+    );
+
+    if (!dictionaryWindow) {
+      setStatus("Dictionary editor popup was blocked. Allow popups for this site and try again.");
+      return;
+    }
+
+    dictionaryWindowRef.current = dictionaryWindow;
+    dictionaryWindow.focus();
+  }
+
   return (
     <main className="container composer-page py-4 py-lg-5">
       <header className="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
@@ -210,9 +270,9 @@ export function Page() {
           <p className="text-secondary mb-0">Depersonalize text before sharing it with AI tools.</p>
         </div>
         <div className="d-flex flex-wrap justify-content-end gap-2">
-          <a className="btn btn-outline-secondary btn-sm" href="/dictionaries">
+          <button className="btn btn-outline-secondary btn-sm" type="button" onClick={openDictionaryEditor}>
             Edit dictionaries
-          </a>
+          </button>
         </div>
       </header>
 

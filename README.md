@@ -46,6 +46,10 @@ replace them. The copied result remains clean text without highlight markup.
 7. Paste the AI response into Nymble, reverse the direction, and restore the
    placeholders to their primary dictionary values.
 
+The dictionary editor opens in a separate window so the composer text remains
+in place. Saving dictionary changes refreshes the composer dictionaries and
+automatically repeats the current transformation.
+
 On a new installation, the bundled **{Work}** dictionary is selected and the
 source editor shows one fictional sentence that demonstrates depersonalization.
 It intentionally leaves `Paris` out of the dictionary so Presidio can

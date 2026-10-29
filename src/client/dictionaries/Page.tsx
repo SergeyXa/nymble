@@ -1,8 +1,10 @@
 import React, { FormEvent, useEffect, useRef, useState } from "react";
+import { publishDictionariesUpdated } from "../dictionaryUpdates";
 import { fetchDictionaries, saveDictionaries } from "./api";
 import type { Dictionary, EditableDictionary, EditableEntry } from "./types";
 
 export function Page() {
+  const popupMode = new URLSearchParams(window.location.search).get("popup") === "1";
   const nextLocalId = useRef(0);
   const [dictionaries, setDictionaries] = useState<EditableDictionary[]>([]);
   const [status, setStatus] = useState("");
@@ -79,13 +81,14 @@ export function Page() {
       const payload = await saveDictionaries(dictionaries);
       setDictionaries(payload.dictionaries.map(toEditableDictionary));
       setStatus(`Saved ${payload.dictionaries.length} dictionaries, ${countPlaceholders(payload.dictionaries)} placeholders`);
+      publishDictionariesUpdated();
     } catch (error) {
       setStatus((error as Error).message);
     }
   }
 
   return (
-    <main className="container dictionaries-page py-4 py-lg-5">
+    <main className={`${popupMode ? "container-fluid dictionaries-page--popup" : "container"} dictionaries-page py-4 py-lg-5`}>
       <header className="dictionaries-header d-flex align-items-center justify-content-between gap-3 mb-4">
         <div>
           <h1 className="h3 mb-1">Dictionaries</h1>
@@ -98,9 +101,15 @@ export function Page() {
           <button className="btn btn-primary btn-sm" type="submit" form="dictionariesForm">
             Save
           </button>
-          <a className="btn btn-outline-secondary btn-sm icon-button" href="/" aria-label="Back to composer" title="Back to composer">
-            <i className="bi bi-arrow-left" aria-hidden="true"></i>
-          </a>
+          {popupMode ? (
+            <button className="btn btn-outline-secondary btn-sm" type="button" onClick={() => window.close()}>
+              Close
+            </button>
+          ) : (
+            <a className="btn btn-outline-secondary btn-sm icon-button" href="/" aria-label="Back to composer" title="Back to composer">
+              <i className="bi bi-arrow-left" aria-hidden="true"></i>
+            </a>
+          )}
         </div>
       </header>
 
